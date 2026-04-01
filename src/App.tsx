@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from './store'
+import { usePinLock, PinScreen } from './components/PinLock'
 import { HomeSelector } from './pages/HomeSelector'
 import { HomeDashboard } from './pages/HomeDashboard'
 import { Inventory } from './pages/Inventory'
@@ -30,6 +31,13 @@ export default function App() {
   const [page, setPage] = useState<Page>('homes')
   const [activeHome, setActiveHome] = useState<Home | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pinLock = usePinLock()
+  const [pinUnlocked, setPinUnlocked] = useState(() => pinLock.isUnlocked())
+
+  // Show PIN screen if locked
+  if (!pinUnlocked) {
+    return <PinScreen mode="unlock" onSuccess={() => setPinUnlocked(true)} />
+  }
 
   const selectHome = (home: Home) => {
     setActiveHome(home)
@@ -80,6 +88,11 @@ export default function App() {
           <button onClick={handleExport} className="ml-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/70 hover:text-white border border-white/20 hover:border-white/40 transition-all">
             📤 Export
           </button>
+          {pinLock.hasPin && (
+            <button onClick={() => { pinLock.lock(); setPinUnlocked(false) }} className="ml-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-white/70 hover:text-white border border-white/20 hover:border-white/40 transition-all">
+              🔒 Lock
+            </button>
+          )}
         </div>
 
         {/* Mobile hamburger */}

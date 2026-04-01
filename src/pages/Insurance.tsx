@@ -88,8 +88,21 @@ export function Insurance({ home, policies, items, onAddPolicy }: Props) {
                 </div>
                 {p.notes && <p className="mt-3 text-sm opacity-70 italic">{p.notes}</p>}
 
+                {/* Renewal reminder */}
+                {p.renewalDate && (() => {
+                  const subject = encodeURIComponent(`Reminder: ${p.type} Insurance renewal — ${p.provider}`)
+                  const body = encodeURIComponent(`Hi,\n\nReminder that my ${p.type} insurance with ${p.provider} renews on ${new Date(p.renewalDate).toLocaleDateString('en-IE')}.\n\nPolicy number: ${p.policyNumber || '—'}\nAnnual premium: ${p.premium ? '€' + p.premium : '—'}\n\nPlease review before renewal date.`)
+                  return (
+                    <a href={`mailto:?subject=${subject}&body=${body}`}
+                      className="mt-3 mb-1 flex items-center justify-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg border transition-opacity hover:opacity-80"
+                      style={{borderColor:'#C9A86A', color:'#C9A86A'}}>
+                      📧 Email renewal reminder to yourself
+                    </a>
+                  )
+                })()}
+
                 {/* Claims checklist */}
-                <div className="mt-4 p-3 rounded-xl text-xs" style={{background:'#F7F3EB'}}>
+                <div className="mt-3 p-3 rounded-xl text-xs" style={{background:'#F7F3EB'}}>
                   <div className="font-bold mb-2 opacity-70">📋 If you need to make a claim:</div>
                   <ul className="space-y-1 opacity-60">
                     <li>□ Have your policy number ready: <strong>{p.policyNumber || '—'}</strong></li>

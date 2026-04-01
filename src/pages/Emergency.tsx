@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Home, InsurancePolicy } from '../types'
+import { PinSettings } from '../components/PinLock'
 
 interface EmergencyInfo {
   waterShutoff: string
@@ -112,6 +113,11 @@ export function Emergency({ home, policies }: Props) {
           </div>
         </div>
       )}
+
+      {/* PIN settings */}
+      <div className="mt-4">
+        <PinSettings />
+      </div>
 
       {/* Edit modal */}
       {editing && (
