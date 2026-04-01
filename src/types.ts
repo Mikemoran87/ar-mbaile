@@ -36,6 +36,7 @@ export interface Item {
   insuranceLinked: boolean
   receiptData?: string   // base64 data URL
   receiptName?: string   // original filename
+  productUrl?: string    // link to product page
   createdAt: string
 }
 
@@ -61,5 +62,6 @@ export interface MaintenanceLog {
   cost: string
   notes: string
   nextDueDate: string
+  productUrl?: string    // link to product/service page
   createdAt: string
 }

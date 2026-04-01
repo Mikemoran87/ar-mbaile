@@ -110,6 +110,23 @@ export function Inventory({ home, items, rooms, onAddRoom, onAddItem, onUpdateIt
         </div>
         {selectedItem.notes && <p className="text-sm opacity-70 italic">{selectedItem.notes}</p>}
 
+        {/* Product link */}
+        {selectedItem.productUrl && (
+          <div className="mt-4 pt-4 border-t" style={{borderColor:'#F0EBE3'}}>
+            <div className="text-xs font-bold uppercase tracking-widest opacity-50 mb-2">Product Link</div>
+            <a href={selectedItem.productUrl} target="_blank" rel="noreferrer"
+              className="flex items-center gap-3 rounded-xl p-3 border hover:opacity-80 transition-opacity"
+              style={{borderColor:'#E8E0D5', background:'#F7F3EB'}}>
+              <span className="text-xl">🔗</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold truncate" style={{color:'#1F3A32'}}>{selectedItem.productUrl.replace(/^https?:\/\//, '').split('/')[0]}</div>
+                <div className="text-xs opacity-50 truncate">{selectedItem.productUrl}</div>
+              </div>
+              <span className="text-xs font-semibold opacity-50">Open ↗</span>
+            </a>
+          </div>
+        )}
+
         {/* Receipt viewer */}
         {selectedItem.receiptData ? (
           <div className="mt-4 pt-4 border-t" style={{borderColor:'#F0EBE3'}}>
@@ -225,6 +242,11 @@ export function Inventory({ home, items, rooms, onAddRoom, onAddItem, onUpdateIt
                 <div><label className="text-xs opacity-50 block mb-1">Serial Number</label><input placeholder="SN..." value={form.serialNumber || ''} onChange={e => setForm(f => ({...f, serialNumber: e.target.value}))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{borderColor:'#E8E0D5'}} /></div>
               </div>
               <textarea placeholder="Notes..." value={form.notes || ''} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className="w-full border rounded-xl px-4 py-2.5 text-sm resize-none" style={{borderColor:'#E8E0D5'}} />
+
+              <div>
+                <label className="text-xs opacity-50 font-semibold uppercase tracking-wide block mb-1">🔗 Product Link</label>
+                <input placeholder="https://www.amazon.co.uk/..." value={form.productUrl || ''} onChange={e => setForm(f => ({...f, productUrl: e.target.value}))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{borderColor:'#E8E0D5'}} />
+              </div>
 
               {/* Receipt upload */}
               <div>

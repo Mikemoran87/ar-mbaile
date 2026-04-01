@@ -54,6 +54,13 @@ export function Maintenance({ home, logs, items, onAddLog }: Props) {
             </div>
           )}
           {log.notes && <p className="text-xs opacity-60 mt-1 italic">{log.notes}</p>}
+          {log.productUrl && (
+            <a href={log.productUrl} target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-semibold mt-1 hover:opacity-70"
+              style={{color:'#C9A86A'}}>
+              🔗 {log.productUrl.replace(/^https?:\/\//, '').split('/')[0]} ↗
+            </a>
+          )}
         </div>
       </div>
     </div>
@@ -139,6 +146,10 @@ export function Maintenance({ home, logs, items, onAddLog }: Props) {
               </div>
               <div><label className="text-xs opacity-50 block mb-1">Next Due Date</label><input type="date" value={form.nextDueDate || ''} onChange={e => setForm(f => ({...f, nextDueDate: e.target.value}))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{borderColor:'#E8E0D5'}} /></div>
               <textarea placeholder="Notes..." value={form.notes || ''} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className="w-full border rounded-xl px-4 py-2.5 text-sm resize-none" style={{borderColor:'#E8E0D5'}} />
+              <div>
+                <label className="text-xs opacity-50 font-semibold uppercase tracking-wide block mb-1">🔗 Product / Service Link</label>
+                <input placeholder="e.g. tradesperson website or parts link" value={form.productUrl || ''} onChange={e => setForm(f => ({...f, productUrl: e.target.value}))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{borderColor:'#E8E0D5'}} />
+              </div>
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border" style={{borderColor:'#E8E0D5'}}>Cancel</button>
                 <button onClick={handleSave} disabled={!form.title} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{background:'#1F3A32'}}>Save Log</button>
