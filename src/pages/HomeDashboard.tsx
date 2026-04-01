@@ -1,4 +1,5 @@
-import type { Home, Item, InsurancePolicy, MaintenanceLog, Room } from '../types'
+import type { Home, Item, InsurancePolicy, MaintenanceLog, Room, Finish } from '../types'
+import { Floorplan } from '../components/Floorplan'
 
 type Page = 'dashboard' | 'inventory' | 'insurance' | 'maintenance' | 'emergency' | 'finishes' | 'renovations' | 'tradespeople' | 'accounts'
 
@@ -8,10 +9,13 @@ interface Props {
   policies: InsurancePolicy[]
   maintenance: MaintenanceLog[]
   rooms: Room[]
+  finishes: Finish[]
   onNavigate: (p: Page) => void
+  onUpdateRoom: (r: Room) => void
+  onAddRoom: (r: Room) => void
 }
 
-export function HomeDashboard({ home, items, policies, maintenance, onNavigate }: Props) {
+export function HomeDashboard({ home, items, policies, maintenance, rooms, finishes, onNavigate, onUpdateRoom, onAddRoom }: Props) {
   const totalValue = items.reduce((sum, i) => sum + (parseFloat(i.purchasePrice) || 0), 0)
   const highValueItems = items.filter(i => i.isHighValue).length
   const today = new Date()
@@ -48,6 +52,10 @@ export function HomeDashboard({ home, items, policies, maintenance, onNavigate }
     { label: 'Maintenance Due', value: overdueMaintenance.length, icon: '🔧', color: overdueMaintenance.length > 0 ? '#6A1E2C' : '#1F3A32', page: 'maintenance' as Page },
   ]
 
+  const handleSelectRoom = (_roomId: string, tab: 'inventory' | 'finishes') => {
+    onNavigate(tab)
+  }
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       {/* Welcome */}
@@ -57,6 +65,19 @@ export function HomeDashboard({ home, items, policies, maintenance, onNavigate }
           <h2 className="font-display text-3xl font-bold" style={{color:'#1F3A32'}}>{home.name}</h2>
           {home.address && <p className="text-sm opacity-60">{home.address}</p>}
         </div>
+      </div>
+
+      {/* Floorplan */}
+      <div className="mb-8">
+        <Floorplan
+          rooms={rooms}
+          items={items}
+          finishes={finishes}
+          onUpdateRoom={onUpdateRoom}
+          onAddRoom={onAddRoom}
+          homeId={home.id}
+          onSelectRoom={handleSelectRoom}
+        />
       </div>
 
       {/* Stat cards */}
@@ -105,11 +126,11 @@ export function HomeDashboard({ home, items, policies, maintenance, onNavigate }
           { icon: '📦', label: 'Inventory', sub: `${items.length} items · ${highValueItems} high value`, page: 'inventory' as Page },
           { icon: '🛡️', label: 'Insurance Vault', sub: `${policies.length} policies`, page: 'insurance' as Page },
           { icon: '🔧', label: 'Maintenance', sub: upcomingMaintenance.length > 0 ? `${upcomingMaintenance.length} due soon` : `${maintenance.length} logs`, page: 'maintenance' as Page },
+          { icon: '🎨', label: 'Finishes', sub: `${finishes.length} records`, page: 'finishes' as Page },
+          { icon: '🏗️', label: 'Renovations', sub: 'Projects & budgets', page: 'renovations' as Page },
+          { icon: '👷', label: 'Tradespeople', sub: 'Trusted contacts', page: 'tradespeople' as Page },
+          { icon: '🔑', label: 'Home Accounts', sub: 'WiFi, utilities, logins', page: 'accounts' as Page },
           { icon: '🚨', label: 'Emergency Info', sub: 'Contacts & shutoffs', page: 'emergency' as Page },
-      { icon: '🎨', label: 'Finishes', sub: 'Paint, tiles, flooring', page: 'finishes' as Page },
-      { icon: '🏗️', label: 'Renovations', sub: 'Projects & budgets', page: 'renovations' as Page },
-      { icon: '👷', label: 'Tradespeople', sub: 'Your trusted contacts', page: 'tradespeople' as Page },
-      { icon: '🔑', label: 'Home Accounts', sub: 'WiFi, utilities, logins', page: 'accounts' as Page },
         ].map(n => (
           <button key={n.label} onClick={() => onNavigate(n.page)}
             className="text-left rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"

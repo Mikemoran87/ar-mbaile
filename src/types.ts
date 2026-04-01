@@ -12,6 +12,12 @@ export interface Room {
   homeId: string
   name: string
   icon: string
+  // Floorplan grid position (20-col x 14-row grid)
+  fx?: number
+  fy?: number
+  fw?: number
+  fh?: number
+  fcolor?: string
 }
 
 export interface Item {
