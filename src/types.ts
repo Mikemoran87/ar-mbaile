@@ -94,6 +94,15 @@ export interface Finish {
   createdAt: string
 }
 
+export interface RenovationDoc {
+  id: string
+  name: string
+  category: 'Plan' | 'Invoice' | 'Agreement' | 'Quote' | 'Permit' | 'Photo' | 'Other'
+  data: string       // base64 data URL
+  size: number       // bytes
+  uploadedAt: string
+}
+
 export interface Renovation {
   id: string
   homeId: string
@@ -106,6 +115,7 @@ export interface Renovation {
   actualCost: string
   contractor: string
   notes: string
+  documents: RenovationDoc[]
   createdAt: string
 }
 

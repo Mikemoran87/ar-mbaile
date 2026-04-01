@@ -1,12 +1,25 @@
-import { useState } from 'react'
-import type { Home, Renovation } from '../types'
+import { useState, useRef } from 'react'
+import type { Home, Renovation, RenovationDoc } from '../types'
 
 const STATUSES = ['Planning', 'In Progress', 'Complete', 'On Hold'] as const
+const DOC_CATEGORIES = ['Plan', 'Invoice', 'Agreement', 'Quote', 'Permit', 'Photo', 'Other'] as const
+
 const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string }> = {
   'Planning':    { bg: '#EFF6FF', color: '#1D4ED8', dot: '#93C5FD' },
   'In Progress': { bg: '#FFFBEB', color: '#92400E', dot: '#FCD34D' },
   'Complete':    { bg: '#F0FDF4', color: '#166534', dot: '#86EFAC' },
   'On Hold':     { bg: '#F9FAFB', color: '#374151', dot: '#D1D5DB' },
+}
+
+const DOC_ICONS: Record<string, string> = {
+  Plan: '📐', Invoice: '🧾', Agreement: '📝', Quote: '💬',
+  Permit: '📋', Photo: '📷', Other: '📎',
+}
+
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
 interface Props {
@@ -16,92 +29,249 @@ interface Props {
   onUpdateRenovation: (r: Renovation) => void
 }
 
-const empty = (): Partial<Renovation> => ({
+const emptyRenovation = (): Partial<Renovation> => ({
   title: '', description: '', status: 'Planning',
-  startDate: '', endDate: '', budget: '', actualCost: '', contractor: '', notes: ''
+  startDate: '', endDate: '', budget: '', actualCost: '',
+  contractor: '', notes: '', documents: []
 })
 
 export function Renovations({ home, renovations, onAddRenovation, onUpdateRenovation }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState<Renovation | null>(null)
   const [selected, setSelected] = useState<Renovation | null>(null)
-  const [form, setForm] = useState<Partial<Renovation>>(empty())
+  const [form, setForm] = useState<Partial<Renovation>>(emptyRenovation())
+  const [uploading, setUploading] = useState(false)
+  const [docCategory, setDocCategory] = useState<RenovationDoc['category']>('Invoice')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const openAdd = () => { setForm(empty()); setEditItem(null); setShowForm(true); setSelected(null) }
+  const openAdd = () => { setForm(emptyRenovation()); setEditItem(null); setShowForm(true); setSelected(null) }
   const openEdit = (r: Renovation) => { setForm({ ...r }); setEditItem(r); setShowForm(true); setSelected(null) }
 
   const handleSave = () => {
     if (!form.title) return
     if (editItem) {
-      onUpdateRenovation({ ...editItem, ...form } as Renovation)
+      const updated = { ...editItem, ...form } as Renovation
+      onUpdateRenovation(updated)
+      setSelected(updated)
     } else {
-      onAddRenovation({ ...form, id: crypto.randomUUID(), homeId: home.id, createdAt: new Date().toISOString() } as Renovation)
+      onAddRenovation({ ...form, id: crypto.randomUUID(), homeId: home.id, documents: [], createdAt: new Date().toISOString() } as Renovation)
     }
     setShowForm(false); setEditItem(null)
+  }
+
+  // Upload a document to the selected renovation
+  const handleFileUpload = (files: FileList | null) => {
+    if (!files || !selected) return
+    setUploading(true)
+    const file = files[0]
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const doc: RenovationDoc = {
+        id: crypto.randomUUID(),
+        name: file.name,
+        category: docCategory,
+        data: ev.target?.result as string,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+      }
+      const updated: Renovation = {
+        ...selected,
+        documents: [...(selected.documents || []), doc],
+      }
+      onUpdateRenovation(updated)
+      setSelected(updated)
+      setUploading(false)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleDeleteDoc = (docId: string) => {
+    if (!selected) return
+    const updated: Renovation = {
+      ...selected,
+      documents: selected.documents.filter(d => d.id !== docId),
+    }
+    onUpdateRenovation(updated)
+    setSelected(updated)
   }
 
   const totalBudget = renovations.reduce((s, r) => s + (parseFloat(r.budget) || 0), 0)
   const totalSpent = renovations.reduce((s, r) => s + (parseFloat(r.actualCost) || 0), 0)
 
-  if (selected) return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <button onClick={() => setSelected(null)} className="text-sm mb-6 flex items-center gap-1 opacity-60 hover:opacity-100">← Back to Renovations</button>
-      <div className="rounded-2xl p-6 shadow-sm" style={{ background: 'white', border: '1px solid #E8E0D5' }}>
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h2 className="font-display text-2xl font-bold" style={{ color: '#1F3A32' }}>{selected.title}</h2>
-            {selected.description && <p className="text-sm opacity-60 mt-1">{selected.description}</p>}
+  // Detail view
+  if (selected) {
+    const docs = selected.documents || []
+    const grouped = DOC_CATEGORIES.reduce((acc, cat) => {
+      const items = docs.filter(d => d.category === cat)
+      if (items.length) acc[cat] = items
+      return acc
+    }, {} as Record<string, RenovationDoc[]>)
+
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <button onClick={() => setSelected(null)} className="text-sm mb-6 flex items-center gap-1 opacity-60 hover:opacity-100">← Back to Renovations</button>
+
+        <div className="rounded-2xl p-6 shadow-sm mb-4" style={{ background: 'white', border: '1px solid #E8E0D5' }}>
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="font-display text-2xl font-bold" style={{ color: '#1F3A32' }}>{selected.title}</h2>
+              {selected.description && <p className="text-sm opacity-60 mt-1">{selected.description}</p>}
+            </div>
+            <button onClick={() => openEdit(selected)} className="px-3 py-1.5 rounded-lg text-xs font-semibold ml-4" style={{ background: '#F0F7F4', color: '#1F3A32' }}>Edit</button>
           </div>
-          <div className="flex gap-2 ml-4">
-            <button onClick={() => openEdit(selected)} className="px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: '#F0F7F4', color: '#1F3A32' }}>Edit</button>
+
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5"
+            style={{ background: STATUS_STYLES[selected.status].bg, color: STATUS_STYLES[selected.status].color }}>
+            <div className="w-2 h-2 rounded-full" style={{ background: STATUS_STYLES[selected.status].dot }}></div>
+            {selected.status}
           </div>
+
+          <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+            {[
+              ['Start Date', selected.startDate ? new Date(selected.startDate).toLocaleDateString('en-IE') : '—'],
+              ['End Date', selected.endDate ? new Date(selected.endDate).toLocaleDateString('en-IE') : '—'],
+              ['Budget', selected.budget ? `€${parseFloat(selected.budget).toLocaleString()}` : '—'],
+              ['Actual Cost', selected.actualCost ? `€${parseFloat(selected.actualCost).toLocaleString()}` : '—'],
+              ['Contractor', selected.contractor || '—'],
+              ['Documents', `${docs.length} file${docs.length !== 1 ? 's' : ''}`],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <div className="text-xs opacity-50 font-semibold uppercase tracking-wide mb-0.5">{k}</div>
+                <div className="font-medium">{v}</div>
+              </div>
+            ))}
+          </div>
+
+          {selected.budget && selected.actualCost && (
+            <div className="mb-4 p-3 rounded-xl" style={{ background: '#F7F3EB' }}>
+              <div className="flex justify-between text-xs font-semibold mb-2">
+                <span>Budget: €{parseFloat(selected.budget).toLocaleString()}</span>
+                <span className={parseFloat(selected.actualCost) > parseFloat(selected.budget) ? 'text-red-600' : 'text-green-700'}>
+                  Spent: €{parseFloat(selected.actualCost).toLocaleString()}
+                </span>
+              </div>
+              <div className="h-2 rounded-full" style={{ background: '#E8E0D5' }}>
+                <div className="h-2 rounded-full"
+                  style={{
+                    width: `${Math.min(100, (parseFloat(selected.actualCost) / parseFloat(selected.budget)) * 100)}%`,
+                    background: parseFloat(selected.actualCost) > parseFloat(selected.budget) ? '#EF4444' : '#1F3A32'
+                  }} />
+              </div>
+            </div>
+          )}
+
+          {selected.notes && <p className="text-sm opacity-70 italic">{selected.notes}</p>}
         </div>
 
-        {/* Status badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5"
-          style={{ background: STATUS_STYLES[selected.status].bg, color: STATUS_STYLES[selected.status].color }}>
-          <div className="w-2 h-2 rounded-full" style={{ background: STATUS_STYLES[selected.status].dot }}></div>
-          {selected.status}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 text-sm mb-5">
-          {[
-            ['Start Date', selected.startDate ? new Date(selected.startDate).toLocaleDateString('en-IE') : '—'],
-            ['End Date', selected.endDate ? new Date(selected.endDate).toLocaleDateString('en-IE') : '—'],
-            ['Budget', selected.budget ? `€${parseFloat(selected.budget).toLocaleString()}` : '—'],
-            ['Actual Cost', selected.actualCost ? `€${parseFloat(selected.actualCost).toLocaleString()}` : '—'],
-            ['Contractor', selected.contractor || '—'],
-          ].map(([k, v]) => (
-            <div key={k}>
-              <div className="text-xs opacity-50 font-semibold uppercase tracking-wide mb-0.5">{k}</div>
-              <div className="font-medium">{v}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Budget vs actual bar */}
-        {selected.budget && selected.actualCost && (
-          <div className="mb-5 p-3 rounded-xl" style={{ background: '#F7F3EB' }}>
-            <div className="flex justify-between text-xs font-semibold mb-2">
-              <span>Budget: €{parseFloat(selected.budget).toLocaleString()}</span>
-              <span className={parseFloat(selected.actualCost) > parseFloat(selected.budget) ? 'text-red-600' : 'text-green-700'}>
-                Spent: €{parseFloat(selected.actualCost).toLocaleString()}
-              </span>
-            </div>
-            <div className="h-2 rounded-full" style={{ background: '#E8E0D5' }}>
-              <div className="h-2 rounded-full transition-all"
-                style={{
-                  width: `${Math.min(100, (parseFloat(selected.actualCost) / parseFloat(selected.budget)) * 100)}%`,
-                  background: parseFloat(selected.actualCost) > parseFloat(selected.budget) ? '#EF4444' : '#1F3A32'
-                }} />
-            </div>
+        {/* Documents section */}
+        <div className="rounded-2xl p-6 shadow-sm" style={{ background: 'white', border: '1px solid #E8E0D5' }}>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="font-semibold text-sm" style={{ color: '#1F3A32' }}>📁 Documents</h3>
+            <span className="text-xs opacity-50">{docs.length} file{docs.length !== 1 ? 's' : ''}</span>
           </div>
-        )}
 
-        {selected.notes && <p className="text-sm opacity-70 italic">{selected.notes}</p>}
+          {/* Upload area */}
+          <div className="mb-5 p-4 rounded-xl border-2 border-dashed" style={{ borderColor: '#C9A86A' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <select
+                value={docCategory}
+                onChange={e => setDocCategory(e.target.value as RenovationDoc['category'])}
+                className="flex-1 border rounded-xl px-3 py-2 text-sm"
+                style={{ borderColor: '#E8E0D5' }}
+              >
+                {DOC_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+              </select>
+              <label className="flex-1">
+                <div className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer hover:opacity-90 transition-opacity"
+                  style={{ background: '#1F3A32' }}>
+                  {uploading ? '⏳ Uploading...' : '📎 Upload file'}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.dwg"
+                  className="hidden"
+                  onChange={e => handleFileUpload(e.target.files)}
+                  disabled={uploading}
+                />
+              </label>
+            </div>
+            <p className="text-xs opacity-40 text-center">PDF, images, Word, Excel, DWG plans supported</p>
+          </div>
+
+          {/* Document list grouped by category */}
+          {docs.length === 0 ? (
+            <div className="text-center py-8 opacity-40">
+              <div className="text-3xl mb-2">📁</div>
+              <p className="text-sm">No documents uploaded yet</p>
+              <p className="text-xs mt-1">Upload plans, invoices, agreements, permits</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {Object.entries(grouped).map(([cat, catDocs]) => (
+                <div key={cat}>
+                  <h4 className="text-xs font-bold uppercase tracking-widest opacity-40 mb-2">
+                    {DOC_ICONS[cat]} {cat}
+                  </h4>
+                  <div className="space-y-2">
+                    {catDocs.map(doc => {
+                      const isImage = doc.data.startsWith('data:image')
+                      const isPdf = doc.data.startsWith('data:application/pdf')
+                      return (
+                        <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#F7F3EB', border: '1px solid #E8E0D5' }}>
+                          {isImage ? (
+                            <img src={doc.data} alt={doc.name} className="w-10 h-10 object-cover rounded-lg flex-shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0" style={{ background: '#E8E0D5' }}>
+                              {isPdf ? '📄' : DOC_ICONS[doc.category]}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold truncate" style={{ color: '#1F3A32' }}>{doc.name}</div>
+                            <div className="text-xs opacity-50">
+                              {formatSize(doc.size)} · {new Date(doc.uploadedAt).toLocaleDateString('en-IE')}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <a
+                              href={doc.data}
+                              download={doc.name}
+                              className="text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                              style={{ background: '#F0F7F4', color: '#1F3A32' }}
+                            >
+                              ↓
+                            </a>
+                            {isImage && (
+                              <a
+                                href={doc.data}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                                style={{ background: '#F0F7F4', color: '#1F3A32' }}
+                              >
+                                👁
+                              </a>
+                            )}
+                            <button
+                              onClick={() => handleDeleteDoc(doc.id)}
+                              className="text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                              style={{ background: '#FFF0F0', color: '#6A1E2C' }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
@@ -118,7 +288,7 @@ export function Renovations({ home, renovations, onAddRenovation, onUpdateRenova
           </div>
           <div className="rounded-2xl p-4 shadow-sm" style={{ background: 'white', border: '1px solid #E8E0D5' }}>
             <div className="text-xs opacity-50 font-semibold uppercase tracking-wide mb-1">Total Spent</div>
-            <div className={`text-xl font-bold ${totalSpent > totalBudget && totalBudget > 0 ? 'text-red-600' : ''}`} style={{ color: totalSpent > totalBudget && totalBudget > 0 ? undefined : '#C9A86A' }}>€{totalSpent.toLocaleString()}</div>
+            <div className={`text-xl font-bold`} style={{ color: totalSpent > totalBudget && totalBudget > 0 ? '#EF4444' : '#C9A86A' }}>€{totalSpent.toLocaleString()}</div>
           </div>
         </div>
       )}
@@ -127,7 +297,7 @@ export function Renovations({ home, renovations, onAddRenovation, onUpdateRenova
         <div className="text-center py-16 opacity-50">
           <div className="text-4xl mb-3">🏗️</div>
           <p className="text-sm">No renovation projects yet</p>
-          <p className="text-xs mt-1">Track budgets, timelines, and contractors</p>
+          <p className="text-xs mt-1">Track budgets, timelines, contractors and upload all documents</p>
         </div>
       )}
 
@@ -147,7 +317,12 @@ export function Renovations({ home, renovations, onAddRenovation, onUpdateRenova
                   style={{ background: 'white', border: '1px solid #E8E0D5' }}>
                   <div className="flex items-center justify-between">
                     <div className="font-semibold text-sm" style={{ color: '#1F3A32' }}>{r.title}</div>
-                    <div className="text-xs font-semibold opacity-60">{r.budget ? `€${parseFloat(r.budget).toLocaleString()}` : ''}</div>
+                    <div className="flex items-center gap-2">
+                      {(r.documents?.length || 0) > 0 && (
+                        <span className="text-xs opacity-50">📁 {r.documents.length}</span>
+                      )}
+                      <div className="text-xs font-semibold opacity-60">{r.budget ? `€${parseFloat(r.budget).toLocaleString()}` : ''}</div>
+                    </div>
                   </div>
                   {r.contractor && <div className="text-xs opacity-50 mt-0.5">👷 {r.contractor}</div>}
                   {r.startDate && <div className="text-xs opacity-50 mt-0.5">📅 {new Date(r.startDate).toLocaleDateString('en-IE')}{r.endDate ? ` → ${new Date(r.endDate).toLocaleDateString('en-IE')}` : ''}</div>}
@@ -158,6 +333,7 @@ export function Renovations({ home, renovations, onAddRenovation, onUpdateRenova
         )
       })}
 
+      {/* Add/Edit form modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
           <div className="w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto" style={{ background: 'white' }}>
@@ -178,6 +354,7 @@ export function Renovations({ home, renovations, onAddRenovation, onUpdateRenova
               </div>
               <input placeholder="Main contractor / company" value={form.contractor || ''} onChange={e => setForm(f => ({ ...f, contractor: e.target.value }))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }} />
               <textarea placeholder="Notes..." value={form.notes || ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="w-full border rounded-xl px-4 py-2.5 text-sm resize-none" style={{ borderColor: '#E8E0D5' }} />
+              <p className="text-xs opacity-50 italic">💡 Documents can be uploaded after saving the project</p>
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border" style={{ borderColor: '#E8E0D5' }}>Cancel</button>
                 <button onClick={handleSave} disabled={!form.title} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#1F3A32' }}>Save</button>
