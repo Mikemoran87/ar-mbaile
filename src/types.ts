@@ -34,9 +34,9 @@ export interface Item {
   isSentimental: boolean
   needsMaintenance: boolean
   insuranceLinked: boolean
-  receiptData?: string   // base64 data URL
-  receiptName?: string   // original filename
-  productUrl?: string    // link to product page
+  receiptData?: string
+  receiptName?: string
+  productUrl?: string
   createdAt: string
 }
 
@@ -62,6 +62,57 @@ export interface MaintenanceLog {
   cost: string
   notes: string
   nextDueDate: string
-  productUrl?: string    // link to product/service page
+  productUrl?: string
+  createdAt: string
+}
+
+export interface Finish {
+  id: string
+  homeId: string
+  roomId: string
+  type: 'Paint' | 'Tiles' | 'Flooring' | 'Worktop' | 'Ironmongery' | 'Wallpaper' | 'Other'
+  name: string
+  brand: string
+  colourCode: string
+  colourName: string
+  finish: string
+  supplier: string
+  productCode: string
+  batchNumber: string
+  quantityBought: string
+  quantityLeftover: string
+  notes: string
+  productUrl?: string
+  photoData?: string
+  photoName?: string
+  createdAt: string
+}
+
+export interface Renovation {
+  id: string
+  homeId: string
+  title: string
+  description: string
+  status: 'Planning' | 'In Progress' | 'Complete' | 'On Hold'
+  startDate: string
+  endDate: string
+  budget: string
+  actualCost: string
+  contractor: string
+  notes: string
+  createdAt: string
+}
+
+export interface Tradesperson {
+  id: string
+  homeId: string
+  name: string
+  trade: string
+  phone: string
+  email: string
+  website: string
+  lastUsed: string
+  rating: number
+  notes: string
   createdAt: string
 }

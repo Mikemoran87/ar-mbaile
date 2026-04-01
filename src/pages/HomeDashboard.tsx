@@ -1,6 +1,6 @@
 import type { Home, Item, InsurancePolicy, MaintenanceLog, Room } from '../types'
 
-type Page = 'dashboard' | 'inventory' | 'insurance' | 'maintenance' | 'emergency'
+type Page = 'dashboard' | 'inventory' | 'insurance' | 'maintenance' | 'emergency' | 'finishes' | 'renovations' | 'tradespeople'
 
 interface Props {
   home: Home
@@ -106,6 +106,9 @@ export function HomeDashboard({ home, items, policies, maintenance, onNavigate }
           { icon: '🛡️', label: 'Insurance Vault', sub: `${policies.length} policies`, page: 'insurance' as Page },
           { icon: '🔧', label: 'Maintenance', sub: upcomingMaintenance.length > 0 ? `${upcomingMaintenance.length} due soon` : `${maintenance.length} logs`, page: 'maintenance' as Page },
           { icon: '🚨', label: 'Emergency Info', sub: 'Contacts & shutoffs', page: 'emergency' as Page },
+      { icon: '🎨', label: 'Finishes', sub: 'Paint, tiles, flooring', page: 'finishes' as Page },
+      { icon: '🏗️', label: 'Renovations', sub: 'Projects & budgets', page: 'renovations' as Page },
+      { icon: '👷', label: 'Tradespeople', sub: 'Your trusted contacts', page: 'tradespeople' as Page },
         ].map(n => (
           <button key={n.label} onClick={() => onNavigate(n.page)}
             className="text-left rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow"
