@@ -90,6 +90,7 @@ export interface Finish {
   quantityBought: string
   quantityLeftover: string
   notes: string
+  purchasePrice?: string
   productUrl?: string
   photoData?: string
   photoName?: string

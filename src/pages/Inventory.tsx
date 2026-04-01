@@ -160,6 +160,36 @@ export function Inventory({ home, items, rooms, onAddRoom, onAddItem, onUpdateIt
         <button onClick={openAdd} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{background:'#1F3A32'}}>+ Add Item</button>
       </div>
 
+      {/* Room cost summary */}
+      {items.some(i => i.purchasePrice) && (() => {
+        const roomTotals = allRooms.map(r => ({
+          name: r.name,
+          count: items.filter(i => i.roomId === r.id && i.purchasePrice).length,
+          total: items.filter(i => i.roomId === r.id).reduce((s, i) => s + (parseFloat(i.purchasePrice) || 0), 0),
+        })).filter(r => r.total > 0)
+        const grandTotal = items.reduce((s, i) => s + (parseFloat(i.purchasePrice) || 0), 0)
+        return roomTotals.length > 0 ? (
+          <div className="rounded-2xl p-5 shadow-sm mb-6" style={{background:'white', border:'1px solid #E8E0D5'}}>
+            <h3 className="font-semibold text-sm mb-4" style={{color:'#1F3A32'}}>💰 Cost by Room</h3>
+            <div className="space-y-2">
+              {roomTotals.map(r => (
+                <div key={r.name} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{r.name}</span>
+                    <span className="text-xs opacity-40">{r.count} item{r.count !== 1 ? 's' : ''}</span>
+                  </div>
+                  <span className="font-bold" style={{color:'#1F3A32'}}>€{r.total.toLocaleString()}</span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between text-sm pt-2 mt-2 border-t font-bold" style={{borderColor:'#E8E0D5'}}>
+                <span>Total</span>
+                <span style={{color:'#C9A86A'}}>€{grandTotal.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        ) : null
+      })()}
+
       {/* Filters */}
       <div className="flex gap-2 flex-wrap mb-6">
         <select value={filterRoom} onChange={e => setFilterRoom(e.target.value)} className="border rounded-lg px-3 py-1.5 text-xs" style={{borderColor:'#E8E0D5'}}>

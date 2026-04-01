@@ -104,6 +104,7 @@ export function Finishes({ home, finishes, rooms, onAddFinish, onUpdateFinish, o
           {[
             ['Brand', selected.brand],
             ['Supplier', selected.supplier],
+            ['Cost', selected.purchasePrice ? `€${parseFloat(selected.purchasePrice).toLocaleString()}` : ''],
             ['Product Code', selected.productCode],
             ['Batch Number', selected.batchNumber],
             ['Finish', selected.finish],
@@ -161,6 +162,36 @@ export function Finishes({ home, finishes, rooms, onAddFinish, onUpdateFinish, o
         <button onClick={openAdd} className="px-4 py-2 rounded-xl text-sm font-semibold text-white" style={{ background: '#1F3A32' }}>+ Add Finish</button>
       </div>
 
+      {/* Room cost summary */}
+      {finishes.some(f => f.purchasePrice) && (() => {
+        const roomTotals = allRooms.map(r => ({
+          name: r.name,
+          items: finishes.filter(f => f.roomId === r.id && f.purchasePrice),
+          total: finishes.filter(f => f.roomId === r.id).reduce((s, f) => s + (parseFloat(f.purchasePrice || '0') || 0), 0),
+        })).filter(r => r.total > 0)
+        const grandTotal = finishes.reduce((s, f) => s + (parseFloat(f.purchasePrice || '0') || 0), 0)
+        return roomTotals.length > 0 ? (
+          <div className="rounded-2xl p-5 shadow-sm mb-6" style={{ background: 'white', border: '1px solid #E8E0D5' }}>
+            <h3 className="font-semibold text-sm mb-4" style={{ color: '#1F3A32' }}>💰 Cost by Room</h3>
+            <div className="space-y-2">
+              {roomTotals.map(r => (
+                <div key={r.name} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{r.name}</span>
+                    <span className="text-xs opacity-40">{r.items.length} item{r.items.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <span className="font-bold" style={{ color: '#1F3A32' }}>€{r.total.toLocaleString()}</span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between text-sm pt-2 mt-2 border-t font-bold" style={{ borderColor: '#E8E0D5' }}>
+                <span>Total</span>
+                <span style={{ color: '#C9A86A' }}>€{grandTotal.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        ) : null
+      })()}
+
       {/* Filters */}
       <div className="flex gap-2 flex-wrap mb-6">
         <select value={filterType} onChange={e => setFilterType(e.target.value)} className="border rounded-lg px-3 py-1.5 text-xs" style={{ borderColor: '#E8E0D5' }}>
@@ -198,7 +229,7 @@ export function Finishes({ home, finishes, rooms, onAddFinish, onUpdateFinish, o
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-sm" style={{ color: '#1F3A32' }}>{f.colourName || f.name || f.brand || 'Untitled'}</div>
                     <div className="text-xs opacity-50 mt-0.5">
-                      {roomName(f.roomId)}{f.brand ? ` · ${f.brand}` : ''}{f.colourCode ? ` · ${f.colourCode}` : ''}{f.productCode ? ` · ${f.productCode}` : ''}
+                      {roomName(f.roomId)}{f.brand ? ` · ${f.brand}` : ''}{f.colourCode ? ` · ${f.colourCode}` : ''}{f.productCode ? ` · ${f.productCode}` : ''}{f.purchasePrice ? ` · €${parseFloat(f.purchasePrice).toLocaleString()}` : ''}
                     </div>
                   </div>
                   {f.photoData && <span className="text-sm opacity-40">📷</span>}
@@ -257,7 +288,10 @@ export function Finishes({ home, finishes, rooms, onAddFinish, onUpdateFinish, o
                 <input placeholder="Qty bought (e.g. 3 tins)" value={form.quantityBought || ''} onChange={e => setForm(f => ({ ...f, quantityBought: e.target.value }))} className="border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }} />
                 <input placeholder="Qty leftover" value={form.quantityLeftover || ''} onChange={e => setForm(f => ({ ...f, quantityLeftover: e.target.value }))} className="border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }} />
               </div>
-              <input placeholder="🔗 Product link (URL)" value={form.productUrl || ''} onChange={e => setForm(f => ({ ...f, productUrl: e.target.value }))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }} />
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="text-xs opacity-50 block mb-1">Cost (€)</label><input type="number" placeholder="0" value={form.purchasePrice || ''} onChange={e => setForm(f => ({ ...f, purchasePrice: e.target.value }))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }} /></div>
+                <div><label className="text-xs opacity-50 block mb-1">Product link</label><input placeholder="URL" value={form.productUrl || ''} onChange={e => setForm(f => ({ ...f, productUrl: e.target.value }))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }} /></div>
+              </div>
               <textarea placeholder="Notes..." value={form.notes || ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="w-full border rounded-xl px-4 py-2.5 text-sm resize-none" style={{ borderColor: '#E8E0D5' }} />
 
               {/* Photo upload */}
