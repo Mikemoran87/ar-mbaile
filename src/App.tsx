@@ -122,7 +122,7 @@ export default function App() {
         </div>
       )}
 
-      {page === 'dashboard'    && <HomeDashboard home={activeHome} items={homeItems} policies={homePolicies} maintenance={homeMaintenance} rooms={homeRooms} finishes={homeFinishes} onNavigate={setPage} onUpdateRoom={store.updateRoom} onAddRoom={store.addRoom} />}
+      {page === 'dashboard'    && <HomeDashboard home={activeHome} items={homeItems} policies={homePolicies} maintenance={homeMaintenance} rooms={homeRooms} finishes={homeFinishes} onNavigate={setPage} onUpdateRoom={store.updateRoom} onAddRoom={store.addRoom} onDeleteRoom={store.deleteRoom} />}
       {page === 'inventory'    && <Inventory home={activeHome} items={homeItems} rooms={homeRooms} onAddRoom={store.addRoom} onAddItem={store.addItem} onUpdateItem={store.updateItem} onDeleteItem={store.deleteItem} />}
       {page === 'finishes'     && <Finishes home={activeHome} finishes={homeFinishes} rooms={homeRooms} onAddFinish={store.addFinish} onUpdateFinish={store.updateFinish} onDeleteFinish={store.deleteFinish} />}
       {page === 'insurance'    && <Insurance home={activeHome} policies={homePolicies} items={homeItems} onAddPolicy={store.addPolicy} />}

@@ -13,9 +13,10 @@ interface Props {
   onNavigate: (p: Page) => void
   onUpdateRoom: (r: Room) => void
   onAddRoom: (r: Room) => void
+  onDeleteRoom: (id: string) => void
 }
 
-export function HomeDashboard({ home, items, policies, maintenance, rooms, finishes, onNavigate, onUpdateRoom, onAddRoom }: Props) {
+export function HomeDashboard({ home, items, policies, maintenance, rooms, finishes, onNavigate, onUpdateRoom, onAddRoom, onDeleteRoom }: Props) {
   const totalValue = items.reduce((sum, i) => sum + (parseFloat(i.purchasePrice) || 0), 0)
   const highValueItems = items.filter(i => i.isHighValue).length
   const today = new Date()
@@ -75,6 +76,7 @@ export function HomeDashboard({ home, items, policies, maintenance, rooms, finis
           finishes={finishes}
           onUpdateRoom={onUpdateRoom}
           onAddRoom={onAddRoom}
+          onDeleteRoom={onDeleteRoom}
           homeId={home.id}
           onSelectRoom={handleSelectRoom}
         />

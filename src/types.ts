@@ -12,12 +12,14 @@ export interface Room {
   homeId: string
   name: string
   icon: string
-  // Floorplan grid position (20-col x 14-row grid)
+  floor?: number       // 0 = ground, 1 = first floor
   fx?: number
   fy?: number
   fw?: number
   fh?: number
   fcolor?: string
+  widthM?: number      // real-world width in metres
+  lengthM?: number     // real-world length in metres
 }
 
 export interface Item {
@@ -94,12 +96,23 @@ export interface Finish {
   createdAt: string
 }
 
+export interface BudgetLine {
+  id: string
+  description: string
+  category: string
+  estimated: string
+  actual: string
+  paid: boolean
+  supplier: string
+  notes: string
+}
+
 export interface RenovationDoc {
   id: string
   name: string
   category: 'Plan' | 'Invoice' | 'Agreement' | 'Quote' | 'Permit' | 'Photo' | 'Other'
-  data: string       // base64 data URL
-  size: number       // bytes
+  data: string
+  size: number
   uploadedAt: string
 }
 
@@ -116,6 +129,7 @@ export interface Renovation {
   contractor: string
   notes: string
   documents: RenovationDoc[]
+  budgetLines: BudgetLine[]
   createdAt: string
 }
 

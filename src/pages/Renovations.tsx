@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import type { Home, Renovation, RenovationDoc } from '../types'
+import type { Home, Renovation, RenovationDoc, BudgetLine } from '../types'
 
 const STATUSES = ['Planning', 'In Progress', 'Complete', 'On Hold'] as const
 const DOC_CATEGORIES = ['Plan', 'Invoice', 'Agreement', 'Quote', 'Permit', 'Photo', 'Other'] as const
@@ -29,10 +29,20 @@ interface Props {
   onUpdateRenovation: (r: Renovation) => void
 }
 
+const BUDGET_CATEGORIES = [
+  'Labour', 'Materials', 'Concrete & Groundworks', 'Insulation', 'Roofing',
+  'Electrical', 'Plumbing', 'Tiling', 'Flooring', 'Plastering', 'Painting',
+  'Windows & Doors', 'Joinery & Fit-Out', 'Landscaping', 'Fees & Permits', 'Other'
+]
+
+const emptyLine = (): Omit<BudgetLine, 'id'> => ({
+  description: '', category: 'Materials', estimated: '', actual: '', paid: false, supplier: '', notes: ''
+})
+
 const emptyRenovation = (): Partial<Renovation> => ({
   title: '', description: '', status: 'Planning',
   startDate: '', endDate: '', budget: '', actualCost: '',
-  contractor: '', notes: '', documents: []
+  contractor: '', notes: '', documents: [], budgetLines: []
 })
 
 export function Renovations({ home, renovations, onAddRenovation, onUpdateRenovation }: Props) {
@@ -43,6 +53,9 @@ export function Renovations({ home, renovations, onAddRenovation, onUpdateRenova
   const [uploading, setUploading] = useState(false)
   const [docCategory, setDocCategory] = useState<RenovationDoc['category']>('Invoice')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showLineForm, setShowLineForm] = useState(false)
+  const [editLine, setEditLine] = useState<BudgetLine | null>(null)
+  const [lineForm, setLineForm] = useState<Omit<BudgetLine, 'id'>>(emptyLine())
 
   const openAdd = () => { setForm(emptyRenovation()); setEditItem(null); setShowForm(true); setSelected(null) }
   const openEdit = (r: Renovation) => { setForm({ ...r }); setEditItem(r); setShowForm(true); setSelected(null) }
@@ -54,7 +67,7 @@ export function Renovations({ home, renovations, onAddRenovation, onUpdateRenova
       onUpdateRenovation(updated)
       setSelected(updated)
     } else {
-      onAddRenovation({ ...form, id: crypto.randomUUID(), homeId: home.id, documents: [], createdAt: new Date().toISOString() } as Renovation)
+      onAddRenovation({ ...form, id: crypto.randomUUID(), homeId: home.id, documents: [], budgetLines: [], createdAt: new Date().toISOString() } as Renovation)
     }
     setShowForm(false); setEditItem(null)
   }
@@ -91,6 +104,37 @@ export function Renovations({ home, renovations, onAddRenovation, onUpdateRenova
       ...selected,
       documents: selected.documents.filter(d => d.id !== docId),
     }
+    onUpdateRenovation(updated)
+    setSelected(updated)
+  }
+
+  const handleSaveLine = () => {
+    if (!lineForm.description) return
+    const lines = selected?.budgetLines || []
+    const newLines = editLine
+      ? lines.map(l => l.id === editLine.id ? { ...editLine, ...lineForm } : l)
+      : [...lines, { ...lineForm, id: crypto.randomUUID() }]
+    const updated = { ...selected!, budgetLines: newLines }
+    // Auto-update actualCost from sum of actual lines
+    const totalActual = newLines.reduce((s, l) => s + (parseFloat(l.actual) || 0), 0)
+    updated.actualCost = totalActual > 0 ? String(totalActual) : updated.actualCost
+    onUpdateRenovation(updated)
+    setSelected(updated)
+    setShowLineForm(false); setEditLine(null); setLineForm(emptyLine())
+  }
+
+  const handleDeleteLine = (lineId: string) => {
+    if (!selected) return
+    const newLines = selected.budgetLines.filter(l => l.id !== lineId)
+    const updated = { ...selected, budgetLines: newLines }
+    onUpdateRenovation(updated)
+    setSelected(updated)
+  }
+
+  const handleTogglePaid = (lineId: string) => {
+    if (!selected) return
+    const newLines = selected.budgetLines.map(l => l.id === lineId ? { ...l, paid: !l.paid } : l)
+    const updated = { ...selected, budgetLines: newLines }
     onUpdateRenovation(updated)
     setSelected(updated)
   }
@@ -162,6 +206,115 @@ export function Renovations({ home, renovations, onAddRenovation, onUpdateRenova
 
           {selected.notes && <p className="text-sm opacity-70 italic">{selected.notes}</p>}
         </div>
+
+        {/* Budget Lines */}
+        <div className="rounded-2xl p-6 shadow-sm mb-4" style={{ background: 'white', border: '1px solid #E8E0D5' }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-sm" style={{ color: '#1F3A32' }}>💰 Budget Breakdown</h3>
+            <button onClick={() => { setLineForm(emptyLine()); setEditLine(null); setShowLineForm(true) }}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white" style={{ background: '#1F3A32' }}>
+              + Add Line
+            </button>
+          </div>
+
+          {/* Totals bar */}
+          {(selected.budgetLines?.length || 0) > 0 && (() => {
+            const lines = selected.budgetLines || []
+            const estTotal = lines.reduce((s, l) => s + (parseFloat(l.estimated) || 0), 0)
+            const actTotal = lines.reduce((s, l) => s + (parseFloat(l.actual) || 0), 0)
+            const paidTotal = lines.filter(l => l.paid).reduce((s, l) => s + (parseFloat(l.actual) || parseFloat(l.estimated) || 0), 0)
+            return (
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {[
+                  ['Estimated', `€${estTotal.toLocaleString()}`, '#1F3A32'],
+                  ['Actual', `€${actTotal.toLocaleString()}`, actTotal > estTotal && estTotal > 0 ? '#EF4444' : '#C9A86A'],
+                  ['Paid', `€${paidTotal.toLocaleString()}`, '#166534'],
+                ].map(([l, v, c]) => (
+                  <div key={l} className="rounded-xl p-3 text-center" style={{ background: '#F7F3EB' }}>
+                    <div className="text-xs opacity-50 mb-0.5">{l}</div>
+                    <div className="font-bold text-sm" style={{ color: c }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
+          {/* Group by category */}
+          {(selected.budgetLines?.length || 0) === 0 ? (
+            <div className="text-center py-8 opacity-40">
+              <div className="text-3xl mb-2">💰</div>
+              <p className="text-sm">No budget lines yet</p>
+              <p className="text-xs mt-1">e.g. Concrete €2,400 · Insulation €1,800</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {/* Header row */}
+              <div className="grid grid-cols-12 gap-1 text-xs font-semibold opacity-40 uppercase tracking-wide px-2 mb-1">
+                <div className="col-span-4">Item</div>
+                <div className="col-span-2 text-right">Est.</div>
+                <div className="col-span-2 text-right">Actual</div>
+                <div className="col-span-2 text-center">Paid</div>
+                <div className="col-span-2"></div>
+              </div>
+              {(selected.budgetLines || []).map(line => (
+                <div key={line.id} className={`grid grid-cols-12 gap-1 items-center px-2 py-2 rounded-lg text-sm ${line.paid ? 'opacity-60' : ''}`}
+                  style={{ background: line.paid ? '#F0FDF4' : '#F7F3EB' }}>
+                  <div className="col-span-4 min-w-0">
+                    <div className={`font-medium text-xs truncate ${line.paid ? 'line-through' : ''}`} style={{ color: '#1F3A32' }}>{line.description}</div>
+                    <div className="text-xs opacity-40 truncate">{line.category}</div>
+                  </div>
+                  <div className="col-span-2 text-right text-xs font-medium opacity-70">
+                    {line.estimated ? `€${parseFloat(line.estimated).toLocaleString()}` : '—'}
+                  </div>
+                  <div className="col-span-2 text-right text-xs font-bold" style={{ color: line.actual && line.estimated && parseFloat(line.actual) > parseFloat(line.estimated) ? '#EF4444' : '#1F3A32' }}>
+                    {line.actual ? `€${parseFloat(line.actual).toLocaleString()}` : '—'}
+                  </div>
+                  <div className="col-span-2 flex justify-center">
+                    <button onClick={() => handleTogglePaid(line.id)}
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs transition-all ${line.paid ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300'}`}>
+                      {line.paid ? '✓' : ''}
+                    </button>
+                  </div>
+                  <div className="col-span-2 flex justify-end gap-1">
+                    <button onClick={() => { setLineForm({ description: line.description, category: line.category, estimated: line.estimated, actual: line.actual, paid: line.paid, supplier: line.supplier, notes: line.notes }); setEditLine(line); setShowLineForm(true) }}
+                      className="text-xs px-1.5 py-1 rounded opacity-60 hover:opacity-100" style={{ background: '#E8E0D5' }}>✏️</button>
+                    <button onClick={() => handleDeleteLine(line.id)}
+                      className="text-xs px-1.5 py-1 rounded opacity-60 hover:opacity-100" style={{ background: '#FEE2E2' }}>✕</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Budget line form modal */}
+        {showLineForm && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
+            <div className="w-full max-w-md rounded-2xl p-6" style={{ background: 'white' }}>
+              <h3 className="font-semibold text-base mb-4" style={{ color: '#1F3A32' }}>{editLine ? 'Edit Budget Line' : 'Add Budget Line'}</h3>
+              <div className="space-y-3">
+                <input placeholder="Description * (e.g. Concrete, Insulation, Labour)" value={lineForm.description} onChange={e => setLineForm(f => ({ ...f, description: e.target.value }))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }} autoFocus />
+                <select value={lineForm.category} onChange={e => setLineForm(f => ({ ...f, category: e.target.value }))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }}>
+                  {BUDGET_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-xs opacity-50 block mb-1">Estimated (€)</label><input type="number" placeholder="0" value={lineForm.estimated} onChange={e => setLineForm(f => ({ ...f, estimated: e.target.value }))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }} /></div>
+                  <div><label className="text-xs opacity-50 block mb-1">Actual (€)</label><input type="number" placeholder="0" value={lineForm.actual} onChange={e => setLineForm(f => ({ ...f, actual: e.target.value }))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }} /></div>
+                </div>
+                <input placeholder="Supplier / Contractor" value={lineForm.supplier} onChange={e => setLineForm(f => ({ ...f, supplier: e.target.value }))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{ borderColor: '#E8E0D5' }} />
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={lineForm.paid} onChange={e => setLineForm(f => ({ ...f, paid: e.target.checked }))} className="rounded" />
+                  Mark as paid
+                </label>
+                <textarea placeholder="Notes..." value={lineForm.notes} onChange={e => setLineForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="w-full border rounded-xl px-4 py-2.5 text-sm resize-none" style={{ borderColor: '#E8E0D5' }} />
+                <div className="flex gap-3 pt-1">
+                  <button onClick={() => { setShowLineForm(false); setEditLine(null) }} className="flex-1 py-2.5 rounded-xl text-sm font-semibold border" style={{ borderColor: '#E8E0D5' }}>Cancel</button>
+                  <button onClick={handleSaveLine} disabled={!lineForm.description} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40" style={{ background: '#1F3A32' }}>Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Documents section */}
         <div className="rounded-2xl p-6 shadow-sm" style={{ background: 'white', border: '1px solid #E8E0D5' }}>

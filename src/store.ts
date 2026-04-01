@@ -32,6 +32,7 @@ export function useStore() {
   const addHome = useCallback((h: Home) => { setHomes(prev => { const n = [...prev, h]; save(KEY_HOMES, n); return n }) }, [])
   const addRoom = useCallback((r: Room) => { setRooms(prev => { const n = [...prev, r]; save(KEY_ROOMS, n); return n }) }, [])
   const updateRoom = useCallback((r: Room) => { setRooms(prev => { const n = prev.map(x => x.id === r.id ? r : x); save(KEY_ROOMS, n); return n }) }, [])
+  const deleteRoom = useCallback((id: string) => { setRooms(prev => { const n = prev.filter(r => r.id !== id); save(KEY_ROOMS, n); return n }) }, [])
   const addItem = useCallback((item: Item) => { setItems(prev => { const n = [...prev, item]; save(KEY_ITEMS, n); return n }) }, [])
   const updateItem = useCallback((item: Item) => { setItems(prev => { const n = prev.map(i => i.id === item.id ? item : i); save(KEY_ITEMS, n); return n }) }, [])
   const deleteItem = useCallback((id: string) => { setItems(prev => { const n = prev.filter(i => i.id !== id); save(KEY_ITEMS, n); return n }) }, [])
@@ -51,7 +52,7 @@ export function useStore() {
 
   return {
     homes, rooms, items, policies, maintenance, finishes, renovations, tradespeople, accounts,
-    addHome, addRoom, updateRoom, addItem, updateItem, deleteItem, addPolicy, addMaintenance,
+    addHome, addRoom, updateRoom, deleteRoom, addItem, updateItem, deleteItem, addPolicy, addMaintenance,
     addFinish, updateFinish, deleteFinish, addRenovation, updateRenovation,
     addTradesperson, updateTradesperson, deleteTradesperson,
     addAccount, updateAccount, deleteAccount
