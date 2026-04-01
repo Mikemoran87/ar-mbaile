@@ -34,6 +34,8 @@ export interface Item {
   isSentimental: boolean
   needsMaintenance: boolean
   insuranceLinked: boolean
+  receiptData?: string   // base64 data URL
+  receiptName?: string   // original filename
   createdAt: string
 }
 

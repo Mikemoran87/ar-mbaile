@@ -109,6 +109,29 @@ export function Inventory({ home, items, rooms, onAddRoom, onAddItem, onUpdateIt
           {selectedItem.isSentimental && <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{background:'#FCE7F3', color:'#9D174D'}}>💛 Sentimental</span>}
         </div>
         {selectedItem.notes && <p className="text-sm opacity-70 italic">{selectedItem.notes}</p>}
+
+        {/* Receipt viewer */}
+        {selectedItem.receiptData ? (
+          <div className="mt-4 pt-4 border-t" style={{borderColor:'#F0EBE3'}}>
+            <div className="text-xs font-bold uppercase tracking-widest opacity-50 mb-3">Receipt</div>
+            {selectedItem.receiptData.startsWith('data:image') ? (
+              <img src={selectedItem.receiptData} alt="Receipt" className="rounded-xl w-full max-h-80 object-contain border" style={{borderColor:'#E8E0D5'}} />
+            ) : (
+              <a href={selectedItem.receiptData} download={selectedItem.receiptName || 'receipt.pdf'} className="flex items-center gap-3 rounded-xl p-3 border" style={{borderColor:'#A9C1A9', background:'#F0F7F4'}}>
+                <span className="text-2xl">📄</span>
+                <div>
+                  <div className="text-sm font-semibold" style={{color:'#1F3A32'}}>{selectedItem.receiptName || 'receipt.pdf'}</div>
+                  <div className="text-xs opacity-50">Tap to download</div>
+                </div>
+              </a>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4 pt-4 border-t" style={{borderColor:'#F0EBE3'}}>
+            <div className="text-xs font-bold uppercase tracking-widest opacity-50 mb-2">Receipt</div>
+            <p className="text-xs opacity-40 italic">No receipt uploaded — edit item to add one</p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -202,6 +225,37 @@ export function Inventory({ home, items, rooms, onAddRoom, onAddItem, onUpdateIt
                 <div><label className="text-xs opacity-50 block mb-1">Serial Number</label><input placeholder="SN..." value={form.serialNumber || ''} onChange={e => setForm(f => ({...f, serialNumber: e.target.value}))} className="w-full border rounded-xl px-4 py-2.5 text-sm" style={{borderColor:'#E8E0D5'}} /></div>
               </div>
               <textarea placeholder="Notes..." value={form.notes || ''} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className="w-full border rounded-xl px-4 py-2.5 text-sm resize-none" style={{borderColor:'#E8E0D5'}} />
+
+              {/* Receipt upload */}
+              <div>
+                <label className="text-xs opacity-50 font-semibold uppercase tracking-wide block mb-2">📎 Receipt / Invoice</label>
+                {form.receiptData ? (
+                  <div className="rounded-xl border p-3 flex items-center justify-between" style={{borderColor:'#A9C1A9', background:'#F0F7F4'}}>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span>📄</span>
+                      <span className="font-medium truncate max-w-[180px]">{form.receiptName || 'Receipt uploaded'}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      {form.receiptData.startsWith('data:image') && (
+                        <a href={form.receiptData} target="_blank" rel="noreferrer" className="text-xs font-semibold" style={{color:'#1F3A32'}}>View</a>
+                      )}
+                      <button onClick={() => setForm(f => ({...f, receiptData: undefined, receiptName: undefined, hasReceipt: false}))} className="text-xs font-semibold text-red-500">Remove</button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 border-2 border-dashed rounded-xl py-3 cursor-pointer hover:opacity-80 transition-opacity" style={{borderColor:'#C9A86A'}}>
+                    <span className="text-sm font-semibold" style={{color:'#C9A86A'}}>📎 Upload receipt (image or PDF)</span>
+                    <input type="file" accept="image/*,application/pdf" className="hidden" onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const reader = new FileReader()
+                      reader.onload = ev => setForm(f => ({...f, receiptData: ev.target?.result as string, receiptName: file.name, hasReceipt: true}))
+                      reader.readAsDataURL(file)
+                    }} />
+                  </label>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 {([
                   ['hasReceipt', '✅ Has receipt'],
