@@ -119,6 +119,25 @@ export function Finishes({ home, finishes, rooms, onAddFinish, onUpdateFinish, o
 
         {selected.notes && <p className="text-sm opacity-70 italic mb-4">{selected.notes}</p>}
 
+        {/* Receipt */}
+        {selected.receiptData ? (
+          <div className="mt-2 mb-4 pt-4 border-t" style={{ borderColor: '#F0EBE3' }}>
+            <div className="text-xs font-bold uppercase tracking-widest opacity-50 mb-3">Receipt</div>
+            {selected.receiptData.startsWith('data:image') ? (
+              <img src={selected.receiptData} alt="Receipt" className="rounded-xl w-full max-h-72 object-contain border" style={{ borderColor: '#E8E0D5' }} />
+            ) : (
+              <a href={selected.receiptData} download={selected.receiptName || 'receipt.pdf'}
+                className="flex items-center gap-3 rounded-xl p-3 border" style={{ borderColor: '#A9C1A9', background: '#F0F7F4' }}>
+                <span className="text-2xl">📄</span>
+                <div>
+                  <div className="text-sm font-semibold" style={{ color: '#1F3A32' }}>{selected.receiptName || 'receipt.pdf'}</div>
+                  <div className="text-xs opacity-50">Tap to download</div>
+                </div>
+              </a>
+            )}
+          </div>
+        ) : null}
+
         {selected.productUrl && (
           <a href={selected.productUrl} target="_blank" rel="noreferrer"
             className="flex items-center gap-3 rounded-xl p-3 border hover:opacity-80 transition-opacity"
@@ -257,6 +276,31 @@ export function Finishes({ home, finishes, rooms, onAddFinish, onUpdateFinish, o
                       if (!file) return
                       const reader = new FileReader()
                       reader.onload = ev => setForm(f => ({ ...f, photoData: ev.target?.result as string, photoName: file.name }))
+                      reader.readAsDataURL(file)
+                    }} />
+                  </label>
+                )}
+              </div>
+
+              {/* Receipt upload */}
+              <div>
+                <label className="text-xs opacity-50 font-semibold uppercase tracking-wide block mb-2">📎 Receipt / Invoice</label>
+                {form.receiptData ? (
+                  <div className="rounded-xl border p-3 flex items-center justify-between" style={{ borderColor: '#A9C1A9', background: '#F0F7F4' }}>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span>📄</span>
+                      <span className="font-medium truncate max-w-[180px]">{form.receiptName || 'Receipt uploaded'}</span>
+                    </div>
+                    <button onClick={() => setForm(f => ({ ...f, receiptData: undefined, receiptName: undefined }))} className="text-xs font-semibold text-red-500">Remove</button>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 border-2 border-dashed rounded-xl py-3 cursor-pointer hover:opacity-80" style={{ borderColor: '#A9C1A9' }}>
+                    <span className="text-sm font-semibold" style={{ color: '#1F3A32', opacity: 0.7 }}>📎 Upload receipt (image or PDF)</span>
+                    <input type="file" accept="image/*,application/pdf" className="hidden" onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      const reader = new FileReader()
+                      reader.onload = ev => setForm(f => ({ ...f, receiptData: ev.target?.result as string, receiptName: file.name }))
                       reader.readAsDataURL(file)
                     }} />
                   </label>

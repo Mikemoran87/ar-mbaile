@@ -93,6 +93,8 @@ export interface Finish {
   productUrl?: string
   photoData?: string
   photoName?: string
+  receiptData?: string
+  receiptName?: string
   createdAt: string
 }
 
