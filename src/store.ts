@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { Home, Room, Item, InsurancePolicy, MaintenanceLog, Finish, Renovation, Tradesperson } from './types'
+import type { Home, Room, Item, InsurancePolicy, MaintenanceLog, Finish, Renovation, Tradesperson, HomeAccount } from './types'
 
 const KEY_HOMES = 'armbaile_homes'
 const KEY_ROOMS = 'armbaile_rooms'
@@ -9,6 +9,7 @@ const KEY_MAINTENANCE = 'armbaile_maintenance'
 const KEY_FINISHES = 'armbaile_finishes'
 const KEY_RENOVATIONS = 'armbaile_renovations'
 const KEY_TRADESPEOPLE = 'armbaile_tradespeople'
+const KEY_ACCOUNTS = 'armbaile_accounts'
 
 function load<T>(key: string): T[] {
   try { return JSON.parse(localStorage.getItem(key) || '[]') } catch { return [] }
@@ -26,6 +27,7 @@ export function useStore() {
   const [finishes, setFinishes] = useState<Finish[]>(() => load(KEY_FINISHES))
   const [renovations, setRenovations] = useState<Renovation[]>(() => load(KEY_RENOVATIONS))
   const [tradespeople, setTradespeople] = useState<Tradesperson[]>(() => load(KEY_TRADESPEOPLE))
+  const [accounts, setAccounts] = useState<HomeAccount[]>(() => load(KEY_ACCOUNTS))
 
   const addHome = useCallback((h: Home) => { setHomes(prev => { const n = [...prev, h]; save(KEY_HOMES, n); return n }) }, [])
   const addRoom = useCallback((r: Room) => { setRooms(prev => { const n = [...prev, r]; save(KEY_ROOMS, n); return n }) }, [])
@@ -42,11 +44,15 @@ export function useStore() {
   const addTradesperson = useCallback((t: Tradesperson) => { setTradespeople(prev => { const n = [...prev, t]; save(KEY_TRADESPEOPLE, n); return n }) }, [])
   const updateTradesperson = useCallback((t: Tradesperson) => { setTradespeople(prev => { const n = prev.map(x => x.id === t.id ? t : x); save(KEY_TRADESPEOPLE, n); return n }) }, [])
   const deleteTradesperson = useCallback((id: string) => { setTradespeople(prev => { const n = prev.filter(t => t.id !== id); save(KEY_TRADESPEOPLE, n); return n }) }, [])
+  const addAccount = useCallback((a: HomeAccount) => { setAccounts(prev => { const n = [...prev, a]; save(KEY_ACCOUNTS, n); return n }) }, [])
+  const updateAccount = useCallback((a: HomeAccount) => { setAccounts(prev => { const n = prev.map(x => x.id === a.id ? a : x); save(KEY_ACCOUNTS, n); return n }) }, [])
+  const deleteAccount = useCallback((id: string) => { setAccounts(prev => { const n = prev.filter(a => a.id !== id); save(KEY_ACCOUNTS, n); return n }) }, [])
 
   return {
-    homes, rooms, items, policies, maintenance, finishes, renovations, tradespeople,
+    homes, rooms, items, policies, maintenance, finishes, renovations, tradespeople, accounts,
     addHome, addRoom, addItem, updateItem, deleteItem, addPolicy, addMaintenance,
     addFinish, updateFinish, deleteFinish, addRenovation, updateRenovation,
-    addTradesperson, updateTradesperson, deleteTradesperson
+    addTradesperson, updateTradesperson, deleteTradesperson,
+    addAccount, updateAccount, deleteAccount
   }
 }

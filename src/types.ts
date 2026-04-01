@@ -103,6 +103,20 @@ export interface Renovation {
   createdAt: string
 }
 
+export interface HomeAccount {
+  id: string
+  homeId: string
+  category: string
+  provider: string
+  accountNumber: string
+  username: string
+  password: string
+  phone: string
+  website: string
+  notes: string
+  createdAt: string
+}
+
 export interface Tradesperson {
   id: string
   homeId: string

@@ -10,10 +10,11 @@ import { Emergency } from './pages/Emergency'
 import { Finishes } from './pages/Finishes'
 import { Renovations } from './pages/Renovations'
 import { Tradespeople } from './pages/Tradespeople'
+import { HomeAccounts } from './pages/HomeAccounts'
 import { generateHomeReport } from './utils/exportPDF'
 import type { Home } from './types'
 
-type Page = 'homes' | 'dashboard' | 'inventory' | 'insurance' | 'maintenance' | 'emergency' | 'finishes' | 'renovations' | 'tradespeople'
+type Page = 'homes' | 'dashboard' | 'inventory' | 'insurance' | 'maintenance' | 'emergency' | 'finishes' | 'renovations' | 'tradespeople' | 'accounts'
 
 const NAV: { id: Page; icon: string; label: string }[] = [
   { id: 'dashboard',    icon: '🏠', label: 'Home' },
@@ -23,6 +24,7 @@ const NAV: { id: Page; icon: string; label: string }[] = [
   { id: 'maintenance', icon: '🔧', label: 'Maintenance' },
   { id: 'renovations', icon: '🏗️', label: 'Projects' },
   { id: 'tradespeople',icon: '👷', label: 'Trades' },
+  { id: 'accounts',    icon: '🔑', label: 'Accounts' },
   { id: 'emergency',   icon: '🚨', label: 'Emergency' },
 ]
 
@@ -57,6 +59,7 @@ export default function App() {
   const homeFinishes = store.finishes.filter(f => f.homeId === activeHome.id)
   const homeRenovations = store.renovations.filter(r => r.homeId === activeHome.id)
   const homeTradespeople = store.tradespeople.filter(t => t.homeId === activeHome.id)
+  const homeAccounts = store.accounts.filter(a => a.homeId === activeHome.id)
 
   const handleExport = () => generateHomeReport({
     home: activeHome,
@@ -126,6 +129,7 @@ export default function App() {
       {page === 'maintenance'  && <Maintenance home={activeHome} logs={homeMaintenance} items={homeItems} onAddLog={store.addMaintenance} />}
       {page === 'renovations'  && <Renovations home={activeHome} renovations={homeRenovations} onAddRenovation={store.addRenovation} onUpdateRenovation={store.updateRenovation} />}
       {page === 'tradespeople' && <Tradespeople home={activeHome} tradespeople={homeTradespeople} onAddTradesperson={store.addTradesperson} onUpdateTradesperson={store.updateTradesperson} onDeleteTradesperson={store.deleteTradesperson} />}
+      {page === 'accounts'     && <HomeAccounts home={activeHome} accounts={homeAccounts} onAddAccount={store.addAccount} onUpdateAccount={store.updateAccount} onDeleteAccount={store.deleteAccount} />}
       {page === 'emergency'    && <Emergency home={activeHome} policies={homePolicies} />}
     </div>
   )
